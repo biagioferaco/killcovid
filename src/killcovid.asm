@@ -1,0 +1,326 @@
+;*************************************************
+;* COVID                                         *
+;*************************************************
+
+		processor 6502
+		org $1000
+		
+;helpful labels
+CLEAR   = $E544
+GETIN   = $FFE4
+SCNKEY  = $FF9F
+JOYSTCK = $DC00
+
+ENTER	= $C202
+MOVE	= $C203
+
+RANDOM  = $D41B
+
+TEMP0   = $0022
+TEMP1   = $0023
+
+MULTICOLORENABLE = $D01C
+MULTICOLOR1      = $D025
+
+MSBX    = $D010
+
+;sprite 0 setup
+SPRITE0 = $07F8
+COLOR00 = $D027
+SP0X	= $D000
+SP0Y	= $D001
+SP0VAL	= $0340
+
+ENABLE  = $D015
+YEXPAND	= $D017
+XEXPAND	= $D01D
+
+;sprite 1 setup
+SPRITE1 = $07F9
+COLOR10 = $D028
+SP1X	= $D002
+SP1Y	= $D003
+
+COLLIS  = $D01E
+
+			;interrupts
+			LDA #<32768
+			STA $0318
+			LDA #>32768
+			STA $0319
+			
+			JSR CLEAR
+			
+			LDA #13
+			STA ENTER
+			
+			;Background color
+			LDA #00
+			STA $D021
+			
+			;SPRITE0
+			LDA #$81
+			STA SPRITE0
+			
+			LDA #01    ;Multicolor for sprite0
+			STA MULTICOLORENABLE
+			
+			LDA #03		;use red for sprite0
+			STA COLOR00
+			
+			LDA #03		;Enable sprite0
+			STA ENABLE
+			
+			;SPRITE1
+			LDA #$80
+			STA SPRITE1
+			
+			LDA #02		;use  for sprite1
+			STA COLOR10
+			
+			LDA #01
+			STA MULTICOLOR1
+			
+			;starting sprite 0 location
+			LDA MSBX
+			AND #%11111110
+			STA MSBX
+			
+			LDX #100
+			LDY #70
+			STX SP0X
+			STY SP0Y
+			
+			;starting sprite 1 location
+			LDA MSBX
+			AND #%11111101
+			STA MSBX
+			
+			LDX #100
+			LDY #70
+			STX SP1X
+			STY SP1Y
+			
+			LDA #1
+			STA TEMP0
+			STA TEMP1
+		
+
+FOREVER
+		JMP SIRINGEMOVEMENT
+SIRINGEEND
+		JMP COVIDMOVEMENT
+COVIDEND
+		JMP COLCHK
+COLCHKEND
+		JMP FOREVER
+
+		
+
+;Siringe movement 
+SIRINGEMOVEMENT
+
+		LDA #$FF    ; counter
+		CMP $D012 
+		BNE SIRINGEMOVEMENT
+
+UP
+		LDA JOYSTCK
+		AND #1
+		BNE DOWN
+	
+		LDA #$84
+		STA SPRITE0
+		
+		LDY SP0Y
+		CPY #50
+		BEQ DOWN
+		DEY
+		STY SP0Y
+		
+DOWN 	LDA JOYSTCK
+		AND #2
+		BNE LEFT
+		
+		LDA #$82
+		STA SPRITE0
+		
+		LDY SP0Y
+		CPY #229
+		BEQ LEFT
+		INY
+		STY SP0Y
+		
+LEFT
+		LDA JOYSTCK
+		AND #4
+		BNE RIGHT
+		
+		LDA #$83
+		STA SPRITE0
+		
+		LDA MSBX
+		AND #%00000001
+		CMP #0
+		BNE BLEFT1
+		LDX SP0X
+		CPX #24
+		BEQ RIGHT
+
+BLEFT1
+		LDX SP0X
+		DEX
+		STX SP0X
+		CPX #255
+		BNE RIGHT
+		LDA #0
+		LDA MSBX	
+		AND #%11111110
+		STA MSBX
+		
+RIGHT
+		LDA JOYSTCK
+		AND #8
+		BNE BUTTON
+		
+		LDA #$81
+		STA SPRITE0
+		
+		LDA MSBX
+		AND #%00000001
+		CMP #1
+		BNE BRIGHT1
+		LDX SP0X
+		CPX #65
+		BEQ BUTTON
+		
+BRIGHT1
+		LDX SP0X
+		INX
+		STX SP0X
+		CPX #255
+		BNE BUTTON
+		LDA MSBX
+		ORA #%00000001
+		STA MSBX
+		
+BUTTON
+		LDA JOYSTCK
+		AND #16
+		BEQ TOEND
+		JMP SIRINGEEND
+TOEND   
+		JMP END		
+		
+; Covid Movement
+COVIDMOVEMENT
+
+		LDY SP1Y
+		CPY #50
+		BNE NEXTY1
+		LDA #1
+		STA TEMP1
+NEXTY1
+		CPY #229
+		BNE NEXTY2
+		LDA #0
+		STA TEMP1
+
+NEXTY2
+		LDY SP1Y
+		LDA TEMP1
+		CMP #1
+		BNE NEXTY3
+		INY
+		JMP NEXTY4
+NEXTY3
+		DEY
+
+NEXTY4
+		STY SP1Y
+
+		LDA MSBX
+		AND #%00000010
+		CMP #0
+		BNE NEXTX1
+		
+		LDX SP1X
+		CPX #24
+		BNE NEXTX2
+		
+		LDY TEMP0
+		CPY #0
+		BNE NEXTX2
+		
+		LDA #1
+		STA TEMP0
+		JMP NEXTX2
+		
+NEXTX1
+		LDX SP1X
+		CPX #64
+		BNE NEXTX2
+		
+		LDY TEMP0
+		CPY #1
+		BNE NEXTX2
+		
+		LDA #0
+		STA TEMP0
+
+NEXTX2
+		LDX SP1X
+		LDA TEMP0
+		CMP #1
+		BNE NEXTX3
+		
+		CPX #255
+		BCC NEXTX41
+		
+		LDA MSBX
+		ORA #%00000010
+		STA MSBX
+		
+NEXTX41
+		INX
+		STX SP1X
+		JMP NEXTX4
+		
+NEXTX3
+		CPX #1
+		BCS NEXTX42
+		
+		LDA MSBX
+		AND #%11111101
+		STA MSBX
+
+NEXTX42
+		DEX
+		STX SP1X
+	
+NEXTX4
+		JMP COVIDEND   
+
+; Collision
+COLCHK
+		LDA COLLIS
+		CMP #0
+		BEQ COLCHK1
+		
+		LDX RANDOM
+		LDY RANDOM
+		STX SP1X
+		STY SP1Y
+COLCHK1
+		JMP COLCHKEND
+
+		;clean up at the end
+END
+		JSR CLEAR
+		LDA #0
+		STA ENABLE
+		RTS
+
+; sprite 0 / singlecolor / color: $02
+		org $2000-2
+		INCBIN "Sprites.prg"
