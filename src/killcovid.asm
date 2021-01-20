@@ -43,76 +43,76 @@ SP1Y	= $D003
 
 COLLIS  = $D01E
 
-			;interrupts
-			LDA #<32768
-			STA $0318
-			LDA #>32768
-			STA $0319
-			
-			JSR CLEAR
-			
-			LDA #13
-			STA ENTER
-			
-			;Background color
-			LDA #00
-			STA $D021
-			
-			;SPRITE0
-			LDA #$81
-			STA SPRITE0
-			
-			LDA #01    ;Multicolor for sprite0
-			STA MULTICOLORENABLE
-			
-			LDA #03		;use red for sprite0
-			STA COLOR00
-			
-			LDA #03		;Enable sprite0
-			STA ENABLE
-			
-			;SPRITE1
-			LDA #$80
-			STA SPRITE1
-			
-			LDA #02		;use  for sprite1
-			STA COLOR10
-			
-			LDA #01
-			STA MULTICOLOR1
-			
-			;starting sprite 0 location
-			LDA MSBX
-			AND #%11111110
-			STA MSBX
-			
-			LDX #100
-			LDY #70
-			STX SP0X
-			STY SP0Y
-			
-			;starting sprite 1 location
-			LDA MSBX
-			AND #%11111101
-			STA MSBX
-			
-			LDX #100
-			LDY #70
-			STX SP1X
-			STY SP1Y
-			
-			LDA #1
-			STA TEMP0
-			STA TEMP1
+		;interrupts
+		LDA #<32768
+		STA $0318
+		LDA #>32768
+		STA $0319
+		
+		JSR CLEAR
+		
+		LDA #13
+		STA ENTER
+		
+		;Background color
+		LDA #00
+		STA $D021
+		
+		;SPRITE0
+		LDA #$81
+		STA SPRITE0
+		
+		LDA #01    ;Multicolor for sprite0
+		STA MULTICOLORENABLE
+		
+		LDA #03		;use red for sprite0
+		STA COLOR00
+		
+		LDA #03		;Enable sprite0
+		STA ENABLE
+		
+		;SPRITE1
+		LDA #$80
+		STA SPRITE1
+		
+		LDA #02		;use  for sprite1
+		STA COLOR10
+		
+		LDA #01
+		STA MULTICOLOR1
+		
+		;starting sprite 0 location
+		LDA MSBX
+		AND #%11111110
+		STA MSBX
+		
+		LDX #100
+		LDY #70
+		STX SP0X
+		STY SP0Y
+		
+		;starting sprite 1 location
+		LDA MSBX
+		AND #%11111101
+		STA MSBX
+		
+		LDX #100
+		LDY #70
+		STX SP1X
+		STY SP1Y
+		
+		LDA #1
+		STA TEMP0
+		STA TEMP1
 		
 
 FOREVER
-		JMP SIRINGEMOVEMENT
-SIRINGEEND
-		JMP COVIDMOVEMENT
-COVIDEND
-		JMP COLCHK
-COLCHKEND
+		JSR SIRINGEMOVEMENT
+
+		JSR COVIDMOVEMENT
+
+		JSR COLCHK
+
 		JMP FOREVER
 
 		
@@ -207,10 +207,13 @@ BRIGHT1
 BUTTON
 		LDA JOYSTCK
 		AND #16
-		BEQ TOEND
-		JMP SIRINGEEND
-TOEND   
-		JMP END		
+		
+		BNE TOEND
+		JMP END
+		
+TOEND   RTS
+  
+				
 		
 ; Covid Movement
 COVIDMOVEMENT
@@ -299,7 +302,7 @@ NEXTX42
 		STX SP1X
 	
 NEXTX4
-		JMP COVIDEND   
+		RTS   
 
 ; Collision
 COLCHK
@@ -312,7 +315,7 @@ COLCHK
 		STX SP1X
 		STY SP1Y
 COLCHK1
-		JMP COLCHKEND
+		RTS
 
 		;clean up at the end
 END
