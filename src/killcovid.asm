@@ -67,7 +67,7 @@ spr_spr_collision  = $d01e
 
 		;--------------------------------------------------------------
 		; Initialize Spite 0
-		lda #$81
+		lda #$88
 		sta spr0_ptr
 
 		; Set Color for for Sprite 0 (Red)
@@ -146,7 +146,7 @@ up
 		and #1
 		bne down
 
-		lda #$84
+		lda #$8b
 		sta spr0_ptr
 
 		ldy spr0_y
@@ -159,7 +159,7 @@ down 	lda joystick2
 		and #2
 		bne left
 
-		lda #$82
+		lda #$89
 		sta spr0_ptr
 
 		ldy spr0_y
@@ -173,7 +173,7 @@ left
 		and #4
 		bne right
 
-		lda #$83
+		lda #$8a
 		sta spr0_ptr
 
 		lda sprx_msb
@@ -200,7 +200,7 @@ right
 		and #8
 		bne button
 
-		lda #$81
+		lda #$88
 		sta spr0_ptr
 
 		lda sprx_msb
