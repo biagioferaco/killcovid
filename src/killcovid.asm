@@ -90,13 +90,13 @@ spr_spr_collision  = $d01e
 		;--------------------------------------------------------------
 
 		;--------------------------------------------------------------
-		; Starting Point Sprite 1 -- FIXME
+		; Starting Point Sprite 0 -- FIXME
 		lda sprx_msb
 		and #%11111110
 		sta sprx_msb
 
-		ldx #100
-		ldy #70
+		ldx #120
+		ldy #80
 		stx spr0_x
 		sty spr0_y
 
@@ -327,6 +327,34 @@ check_collision
 		lda spr_spr_collision
 		cmp #0
 		beq check_collision_end
+
+		lda #$81
+		sta spr1_ptr
+
+		ldx #0
+		ldy #$81
+jump1
+		lda #$ff
+		cmp timer1
+		bne jump1
+		inx
+		cpx #$0f
+		bne jump1
+		iny
+		cpy #$85
+		beq jump2
+		sty spr1_ptr
+
+jump2
+		lda #$80
+		sta spr1_ptr
+
+		lda #$ff
+		cmp timer1
+		bne jump2
+
+		lda #$80
+		sta spr1_ptr
 
 		; Generate Random Value
 		lda timer1
