@@ -1,329 +1,365 @@
-;*************************************************
-;* COVID                                         *
-;*************************************************
+;--------------------------------------------------------------
+;- KILLCOVID --------------------------------------------------
+;--------------------------------------------------------------
 
 		processor 6502
 		org $1000
-		
-;helpful labels
-CLEAR   = $E544
-GETIN   = $FFE4
-SCNKEY  = $FF9F
-JOYSTCK = $DC00
 
-ENTER	= $C202
-MOVE	= $C203
+;--------------------------------------------------------------
+; General
+clear     = $e544
+getin     = $ffe4
+scnkey    = $ff9f
+joystick2 = $dc00
 
-RANDOM  = $D41B
+enter	  = $c202
+move	  = $c203
 
-TEMP0   = $0022
-TEMP1   = $0023
+temp0     = $0022
+temp1     = $0023
 
-MULTICOLORENABLE = $D01C
-MULTICOLOR1      = $D025
+timer1    = $d012
 
-MSBX    = $D010
+; Sprite 0 Controls
+spr0_ptr = $07f8
+spr0_x   = $d000
+spr0_y   = $d001
+spr0_col = $d027
 
-;sprite 0 setup
-SPRITE0 = $07F8
-COLOR00 = $D027
-SP0X	= $D000
-SP0Y	= $D001
-SP0VAL	= $0340
+; Sprite 1 Controls
+spr1_ptr = $07f9
+spr1_x   = $d002
+spr1_y   = $d003
+spr1_col = $d028
 
-ENABLE  = $D015
-YEXPAND	= $D017
-XEXPAND	= $D01D
+; Others Sprite COntrols
+spr_mul_col_en     = $D01C
+spr_mul_col_1      = $D025
+sprx_msb           = $d010
+spr_enable         = $d015
+spr_spr_collision  = $d01e
 
-;sprite 1 setup
-SPRITE1 = $07F9
-COLOR10 = $D028
-SP1X	= $D002
-SP1Y	= $D003
+;--------------------------------------------------------------
+		; Disable interrupts
+		lda #<32768
+		sta $0318
+		lda #>32768
+		sta $0319
 
-COLLIS  = $D01E
+		; Clear Screen
+		jsr clear
 
-		;interrupts
-		LDA #<32768
-		STA $0318
-		LDA #>32768
-		STA $0319
-		
-		JSR CLEAR
-		
-		LDA #13
-		STA ENTER
-		
-		;Background color
-		LDA #00
-		STA $D021
-		
-		;SPRITE0
-		LDA #$81
-		STA SPRITE0
-		
-		LDA #01    ;Multicolor for sprite0
-		STA MULTICOLORENABLE
-		
-		LDA #03		;use red for sprite0
-		STA COLOR00
-		
-		LDA #03		;Enable sprite0
-		STA ENABLE
-		
-		;SPRITE1
-		LDA #$80
-		STA SPRITE1
-		
-		LDA #02		;use  for sprite1
-		STA COLOR10
-		
-		LDA #01
-		STA MULTICOLOR1
-		
-		;starting sprite 0 location
-		LDA MSBX
-		AND #%11111110
-		STA MSBX
-		
-		LDX #100
-		LDY #70
-		STX SP0X
-		STY SP0Y
-		
-		;starting sprite 1 location
-		LDA MSBX
-		AND #%11111101
-		STA MSBX
-		
-		LDX #100
-		LDY #70
-		STX SP1X
-		STY SP1Y
-		
-		LDA #1
-		STA TEMP0
-		STA TEMP1
-		
+		lda #13
+		sta enter
 
-FOREVER
-		JSR SIRINGEMOVEMENT
+		; Set Background color (Black)
+		lda #00
+		sta $d021
 
-		JSR COVIDMOVEMENT
+		;--------------------------------------------------------------
+		; Enable Sprite0 and Sprite1
+		lda #03
+		sta spr_enable
 
-		JSR COLCHK
+    	; Set Multicolor
+		lda #01
+		sta spr_mul_col_en
 
-		JMP FOREVER
+		;--------------------------------------------------------------
+		; Initialize Spite 0
+		lda #$81
+		sta spr0_ptr
 
-		
+		; Set Color for for Sprite 0 (Red)
+		lda #03
+		sta spr0_col
+		;--------------------------------------------------------------
 
-;Siringe movement 
-SIRINGEMOVEMENT
+		;--------------------------------------------------------------
+		; Initialize Spite 1
+		lda #$80
+		sta spr1_ptr
 
-		LDA #$FF    ; counter
-		CMP $D012 
-		BNE SIRINGEMOVEMENT
+		; Set Color for for Sprite 1 (Blue)
+		lda #02
+		sta spr1_col
 
-UP
-		LDA JOYSTCK
-		AND #1
-		BNE DOWN
-	
-		LDA #$84
-		STA SPRITE0
-		
-		LDY SP0Y
-		CPY #50
-		BEQ DOWN
-		DEY
-		STY SP0Y
-		
-DOWN 	LDA JOYSTCK
-		AND #2
-		BNE LEFT
-		
-		LDA #$82
-		STA SPRITE0
-		
-		LDY SP0Y
-		CPY #229
-		BEQ LEFT
-		INY
-		STY SP0Y
-		
-LEFT
-		LDA JOYSTCK
-		AND #4
-		BNE RIGHT
-		
-		LDA #$83
-		STA SPRITE0
-		
-		LDA MSBX
-		AND #%00000001
-		CMP #0
-		BNE BLEFT1
-		LDX SP0X
-		CPX #24
-		BEQ RIGHT
+		; Set Color 2 for for Sprite 1 (White)
+		lda #01
+		sta spr_mul_col_1
+		;--------------------------------------------------------------
 
-BLEFT1
-		LDX SP0X
-		DEX
-		STX SP0X
-		CPX #255
-		BNE RIGHT
-		LDA #0
-		LDA MSBX	
-		AND #%11111110
-		STA MSBX
-		
-RIGHT
-		LDA JOYSTCK
-		AND #8
-		BNE BUTTON
-		
-		LDA #$81
-		STA SPRITE0
-		
-		LDA MSBX
-		AND #%00000001
-		CMP #1
-		BNE BRIGHT1
-		LDX SP0X
-		CPX #65
-		BEQ BUTTON
-		
-BRIGHT1
-		LDX SP0X
-		INX
-		STX SP0X
-		CPX #255
-		BNE BUTTON
-		LDA MSBX
-		ORA #%00000001
-		STA MSBX
-		
-BUTTON
-		LDA JOYSTCK
-		AND #16
-		
-		BNE TOEND
-		JMP END
-		
-TOEND   RTS
-  
-				
-		
+		;--------------------------------------------------------------
+		; Starting Point Sprite 1 -- FIXME
+		lda sprx_msb
+		and #%11111110
+		sta sprx_msb
+
+		ldx #100
+		ldy #70
+		stx spr0_x
+		sty spr0_y
+
+		;--------------------------------------------------------------
+		; Starting Point Sprite 1 -- FIXME
+		lda sprx_msb
+		and #%11111101
+		sta sprx_msb
+
+		ldx #100
+		ldy #70
+		stx spr1_x
+		sty spr1_y
+
+		;--------------------------------------------------------------
+		; Initialize X and Y Direction of Covid
+		lda #1
+		sta temp0
+		sta temp1
+
+
+;--------------------------------------------------------------
+; Main Loop
+forever
+		jsr siringemovement
+
+		jsr covidmovement
+
+		jsr check_collision
+
+		jmp forever
+;--------------------------------------------------------------
+
+
+
+;--------------------------------------------------------------
+; Siringe Movement
+siringemovement
+
+		; Timer Delay
+		lda #$0f
+		cmp timer1
+		bne siringemovement
+
+up
+		lda joystick2
+		and #1
+		bne down
+
+		lda #$84
+		sta spr0_ptr
+
+		ldy spr0_y
+		cpy #50
+		beq down
+		dey
+		sty spr0_y
+
+down 	lda joystick2
+		and #2
+		bne left
+
+		lda #$82
+		sta spr0_ptr
+
+		ldy spr0_y
+		cpy #229
+		beq left
+		iny
+		sty spr0_y
+
+left
+		lda joystick2
+		and #4
+		bne right
+
+		lda #$83
+		sta spr0_ptr
+
+		lda sprx_msb
+		and #%00000001
+		cmp #0
+		bne bleft1
+		ldx spr0_x
+		cpx #24
+		beq right
+
+bleft1
+		ldx spr0_x
+		dex
+		stx spr0_x
+		cpx #255
+		bne right
+		lda #0
+		lda sprx_msb
+		and #%11111110
+		sta sprx_msb
+
+right
+		lda joystick2
+		and #8
+		bne button
+
+		lda #$81
+		sta spr0_ptr
+
+		lda sprx_msb
+		and #%00000001
+		cmp #1
+		bne bright1
+		ldx spr0_x
+		cpx #65
+		beq button
+
+bright1
+		ldx spr0_x
+		inx
+		stx spr0_x
+		cpx #255
+		bne button
+		lda sprx_msb
+		ora #%00000001
+		sta sprx_msb
+
+button
+		lda joystick2
+		and #16
+
+		bne toend
+		jmp end
+
+toend   rts
+;--------------------------------------------------------------
+
+;--------------------------------------------------------------
 ; Covid Movement
-COVIDMOVEMENT
+covidmovement
+		ldy spr1_y
+		cpy #50
+		bne nexty1
+		lda #1
+		sta temp1
+nexty1
+		cpy #229
+		bne nexty2
+		lda #0
+		sta temp1
 
-		LDY SP1Y
-		CPY #50
-		BNE NEXTY1
-		LDA #1
-		STA TEMP1
-NEXTY1
-		CPY #229
-		BNE NEXTY2
-		LDA #0
-		STA TEMP1
+nexty2
+		ldy spr1_y
+		lda temp1
+		cmp #1
+		bne nexty3
+		iny
+		jmp nexty4
+nexty3
+		dey
 
-NEXTY2
-		LDY SP1Y
-		LDA TEMP1
-		CMP #1
-		BNE NEXTY3
-		INY
-		JMP NEXTY4
-NEXTY3
-		DEY
+nexty4
+		sty spr1_y
 
-NEXTY4
-		STY SP1Y
+		lda sprx_msb
+		and #%00000010
+		cmp #0
+		bne nextx1
 
-		LDA MSBX
-		AND #%00000010
-		CMP #0
-		BNE NEXTX1
-		
-		LDX SP1X
-		CPX #24
-		BNE NEXTX2
-		
-		LDY TEMP0
-		CPY #0
-		BNE NEXTX2
-		
-		LDA #1
-		STA TEMP0
-		JMP NEXTX2
-		
-NEXTX1
-		LDX SP1X
-		CPX #64
-		BNE NEXTX2
-		
-		LDY TEMP0
-		CPY #1
-		BNE NEXTX2
-		
-		LDA #0
-		STA TEMP0
+		ldx spr1_x
+		cpx #24
+		bne nextx2
 
-NEXTX2
-		LDX SP1X
-		LDA TEMP0
-		CMP #1
-		BNE NEXTX3
-		
-		CPX #255
-		BCC NEXTX41
-		
-		LDA MSBX
-		ORA #%00000010
-		STA MSBX
-		
-NEXTX41
-		INX
-		STX SP1X
-		JMP NEXTX4
-		
-NEXTX3
-		CPX #1
-		BCS NEXTX42
-		
-		LDA MSBX
-		AND #%11111101
-		STA MSBX
+		ldy temp0
+		cpy #0
+		bne nextx2
 
-NEXTX42
-		DEX
-		STX SP1X
-	
-NEXTX4
-		RTS   
+		lda #1
+		sta temp0
+		jmp nextx2
 
+nextx1
+		ldx spr1_x
+		cpx #64
+		bne nextx2
+
+		ldy temp0
+		cpy #1
+		bne nextx2
+
+		lda #0
+		sta temp0
+
+nextx2
+		ldx spr1_x
+		lda temp0
+		cmp #1
+		bne nextx3
+
+		cpx #255
+		bcc nextx41
+
+		lda sprx_msb
+		ora #%00000010
+		sta sprx_msb
+
+nextx41
+		inx
+		stx spr1_x
+		jmp nextx4
+
+nextx3
+		cpx #1
+		bcs nextx42
+
+		lda sprx_msb
+		and #%11111101
+		sta sprx_msb
+
+nextx42
+		dex
+		stx spr1_x
+
+nextx4
+		rts
+;--------------------------------------------------------------
+
+;--------------------------------------------------------------
 ; Collision
-COLCHK
-		LDA COLLIS
-		CMP #0
-		BEQ COLCHK1
-		
-		LDX RANDOM
-		LDY RANDOM
-		STX SP1X
-		STY SP1Y
-COLCHK1
-		RTS
+check_collision
+		lda spr_spr_collision
+		cmp #0
+		beq check_collision_end
 
-		;clean up at the end
-END
-		JSR CLEAR
-		LDA #0
-		STA ENABLE
-		RTS
+		; Generate Random Value
+		lda timer1
+		eor $dc04
+		sbc $dc05
 
-; sprite 0 / singlecolor / color: $02
+		sta spr1_x
+
+		lda sprx_msb   ; FIXME
+		and #%11111101
+		sta sprx_msb
+
+		; Generate Random Value
+		lda timer1
+		eor $dc04
+		sbc $dc05
+
+		sta spr1_y
+
+check_collision_end
+		rts
+;--------------------------------------------------------------
+
+;--------------------------------------------------------------
+; Clean up at the end
+end
+		jsr clear
+		lda #0
+		sta spr_enable
+		rts
+
+;--------------------------------------------------------------
+		; Include Generated list of Sprites
 		org $2000-2
-		INCBIN "Sprites.prg"
+		incbin "Sprites.prg"
+;--------------------------------------------------------------
