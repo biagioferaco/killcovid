@@ -331,32 +331,24 @@ check_collision
 		lda #$81
 		sta spr1_ptr
 
-		ldx #0
 		ldy #$81
-jump1
+
+		; Nested Timing Loop For Animation
+loop1
+		ldx #0
+loop2
 		lda #$ff
 		cmp timer1
-		bne jump1
+		bne loop2
 		inx
 		cpx #$0f
-		bne jump1
+		bne loop2
 		iny
-		cpy #$85
-		beq jump2
 		sty spr1_ptr
+		cpy #$85
+		bne loop1
 
-jump2
-		lda #$80
-		sta spr1_ptr
-
-		lda #$ff
-		cmp timer1
-		bne jump2
-
-		lda #$80
-		sta spr1_ptr
-
-		; Generate Random Value
+		; Generate Random Value X
 		lda timer1
 		eor $dc04
 		sbc $dc05
@@ -367,12 +359,19 @@ jump2
 		and #%11111101
 		sta sprx_msb
 
-		; Generate Random Value
+		; Generate Random Value Y
 		lda timer1
 		eor $dc04
 		sbc $dc05
 
 		sta spr1_y
+
+		; Reset Initial Pointer to Sprite 1
+		lda #$80
+		sta spr1_ptr
+
+		; Clear Interrput Register
+		lda spr_spr_collision
 
 check_collision_end
 		rts
