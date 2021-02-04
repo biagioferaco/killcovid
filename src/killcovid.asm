@@ -12,13 +12,17 @@ getin     = $ffe4
 scnkey    = $ff9f
 joystick2 = $dc00
 
-enter	  = $c202
-move	  = $c203
+enter     = $c202
+move      = $c203
 
 temp0     = $0022
 temp1     = $0023
 
 timer1    = $d012
+
+border    = $d020
+backgrd   = $d021
+textcolor = $0286
 
 ; Sprite 0 Controls
 spr0_ptr = $07f8
@@ -52,16 +56,21 @@ spr_spr_collision  = $d01e
 		lda #13
 		sta enter
 
-		; Set Background color (Black)
+		; Set Background color (Black), Border (Red) and Text (White)
 		lda #00
-		sta $d021
+		sta backgrd
+		lda #02
+		sta border
+		lda #$01
+		sta textcolor
+		jsr clear
 
 		;--------------------------------------------------------------
 		; Enable Sprite0 and Sprite1
 		lda #03
 		sta spr_enable
 
-    	; Set Multicolor
+		; Set Multicolor
 		lda #01
 		sta spr_mul_col_en
 
@@ -117,10 +126,10 @@ spr_spr_collision  = $d01e
 		sta temp0
 		sta temp1
 
-
 ;--------------------------------------------------------------
 ; Main Loop
-forever
+		jsr score
+forever:
 		jsr siringemovement
 
 		jsr covidmovement
@@ -131,17 +140,16 @@ forever
 ;--------------------------------------------------------------
 
 
-
 ;--------------------------------------------------------------
 ; Siringe Movement
-siringemovement
+siringemovement:
 
 		; Timer Delay
 		lda #$0f
 		cmp timer1
 		bne siringemovement
 
-up
+up:
 		lda joystick2
 		and #1
 		bne down
@@ -155,7 +163,8 @@ up
 		dey
 		sty spr0_y
 
-down 	lda joystick2
+down:
+		lda joystick2
 		and #2
 		bne left
 
@@ -168,7 +177,7 @@ down 	lda joystick2
 		iny
 		sty spr0_y
 
-left
+left:
 		lda joystick2
 		and #4
 		bne right
@@ -184,7 +193,7 @@ left
 		cpx #24
 		beq right
 
-bleft1
+bleft1:
 		ldx spr0_x
 		dex
 		stx spr0_x
@@ -195,7 +204,7 @@ bleft1
 		and #%11111110
 		sta sprx_msb
 
-right
+right:
 		lda joystick2
 		and #8
 		bne button
@@ -211,7 +220,7 @@ right
 		cpx #65
 		beq button
 
-bright1
+bright1:
 		ldx spr0_x
 		inx
 		stx spr0_x
@@ -221,41 +230,42 @@ bright1
 		ora #%00000001
 		sta sprx_msb
 
-button
+button:
 		lda joystick2
 		and #16
 
 		bne toend
 		jmp end
 
-toend   rts
+toend:
+		rts
 ;--------------------------------------------------------------
 
 ;--------------------------------------------------------------
 ; Covid Movement
-covidmovement
+covidmovement:
 		ldy spr1_y
 		cpy #50
 		bne nexty1
 		lda #1
 		sta temp1
-nexty1
+nexty1:
 		cpy #229
 		bne nexty2
 		lda #0
 		sta temp1
 
-nexty2
+nexty2:
 		ldy spr1_y
 		lda temp1
 		cmp #1
 		bne nexty3
 		iny
 		jmp nexty4
-nexty3
+nexty3:
 		dey
 
-nexty4
+nexty4:
 		sty spr1_y
 
 		lda sprx_msb
@@ -275,7 +285,7 @@ nexty4
 		sta temp0
 		jmp nextx2
 
-nextx1
+nextx1:
 		ldx spr1_x
 		cpx #64
 		bne nextx2
@@ -287,7 +297,7 @@ nextx1
 		lda #0
 		sta temp0
 
-nextx2
+nextx2:
 		ldx spr1_x
 		lda temp0
 		cmp #1
@@ -300,12 +310,12 @@ nextx2
 		ora #%00000010
 		sta sprx_msb
 
-nextx41
+nextx41:
 		inx
 		stx spr1_x
 		jmp nextx4
 
-nextx3
+nextx3:
 		cpx #1
 		bcs nextx42
 
@@ -313,17 +323,17 @@ nextx3
 		and #%11111101
 		sta sprx_msb
 
-nextx42
+nextx42:
 		dex
 		stx spr1_x
 
-nextx4
+nextx4:
 		rts
 ;--------------------------------------------------------------
 
 ;--------------------------------------------------------------
 ; Collision
-check_collision
+check_collision:
 		lda spr_spr_collision
 		cmp #0
 		beq check_collision_end
@@ -334,9 +344,9 @@ check_collision
 		ldy #$81
 
 		; Nested Timing Loop For Animation
-loop1
+loop1:
 		ldx #0
-loop2
+loop2:
 		lda #$ff
 		cmp timer1
 		bne loop2
@@ -373,20 +383,38 @@ loop2
 		; Clear Interrput Register
 		lda spr_spr_collision
 
-check_collision_end
+		jsr score
+
+check_collision_end:
 		rts
 ;--------------------------------------------------------------
 
 ;--------------------------------------------------------------
+; Score Update
+score:
+		ldx #$00       ;using x register as column counter
+print:
+		lda result,x   ;load a with x bit from message
+		sta $0400,x    ;store this bit in row 0 col 0 address
+		inx            ;x++
+		cpx #$05       ;is x >= 5?
+		bne print      ;if not x >= 5, loop again
+		rts            ;return from program
+
+;--------------------------------------------------------------
 ; Clean up at the end
-end
+end:
 		jsr clear
 		lda #0
 		sta spr_enable
 		rts
 
+
+result dc $08,$05,$0c,$0c,$0f
+
 ;--------------------------------------------------------------
 		; Include Generated list of Sprites
 		org $2000-2
 		incbin "Sprites.prg"
+
 ;--------------------------------------------------------------
