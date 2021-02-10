@@ -18,11 +18,16 @@ move      = $c203
 temp0     = $0022
 temp1     = $0023
 
+points1   = $0024
+points2   = $0025
+
 timer1    = $d012
 
 border    = $d020
 backgrd   = $d021
 textcolor = $0286
+
+screen_ram = $0400
 
 ; Sprite 0 Controls
 spr0_ptr = $07f8
@@ -104,7 +109,7 @@ spr_spr_collision  = $d01e
 		and #%11111110
 		sta sprx_msb
 
-		ldx #120
+		ldx #190
 		ldy #80
 		stx spr0_x
 		sty spr0_y
@@ -125,6 +130,13 @@ spr_spr_collision  = $d01e
 		lda #1
 		sta temp0
 		sta temp1
+
+		;--------------------------------------------------------------
+		; Initialize Points
+		lda #"1"
+		sta points1
+		lda #"0"
+		sta points2
 
 ;--------------------------------------------------------------
 ; Main Loop
@@ -247,13 +259,22 @@ covidmovement:
 		ldy spr1_y
 		cpy #50
 		bne nexty1
+
+		; Change direction (Down) and increase RT
 		lda #1
 		sta temp1
+		jsr incpoint
+		jsr score
+
 nexty1:
 		cpy #229
 		bne nexty2
+
+		; Change direction (Up) and increase RT
 		lda #0
 		sta temp1
+		jsr incpoint
+		jsr score
 
 nexty2:
 		ldy spr1_y
@@ -264,7 +285,6 @@ nexty2:
 		jmp nexty4
 nexty3:
 		dey
-
 nexty4:
 		sty spr1_y
 
@@ -281,8 +301,12 @@ nexty4:
 		cpy #0
 		bne nextx2
 
+		; Change direction (Right) and increase RT
 		lda #1
 		sta temp0
+		jsr incpoint
+		jsr score
+
 		jmp nextx2
 
 nextx1:
@@ -294,8 +318,11 @@ nextx1:
 		cpy #1
 		bne nextx2
 
+		; Change direction (Left) and increase RT
 		lda #0
 		sta temp0
+		jsr incpoint
+		jsr score
 
 nextx2:
 		ldx spr1_x
@@ -383,6 +410,9 @@ loop2:
 		; Clear Interrput Register
 		lda spr_spr_collision
 
+		; Increase Points
+		jsr decpoint
+
 		jsr score
 
 check_collision_end:
@@ -392,14 +422,76 @@ check_collision_end:
 ;--------------------------------------------------------------
 ; Score Update
 score:
-		ldx #$00       ;using x register as column counter
+		ldx #$00         ;using x register as column counter
 print:
-		lda result,x   ;load a with x bit from message
-		sta $0400,x    ;store this bit in row 0 col 0 address
-		inx            ;x++
-		cpx #$05       ;is x >= 5?
-		bne print      ;if not x >= 5, loop again
-		rts            ;return from program
+		lda rt_index,x     ;load a with x bit from message
+		sta screen_ram,x ;store this bit in row 0 col 0 address
+		inx              ;x++
+		cpx #$07         ;is x >= 7?
+		bne print        ;if not x >= 7, loop again
+		lda points1
+		sta screen_ram,x
+		inx
+		lda #"."
+		sta screen_ram,x
+		lda points2
+		inx
+		sta screen_ram,x
+		rts
+
+incpoint:
+		ldx points1
+		ldy points2
+		cpx #"1"
+		bne inczerocheck
+		cpy #"9"
+		beq inctwo
+		iny
+		jmp incload
+inctwo:
+		ldx #"0"
+		ldy #"2"
+		jmp incload
+
+inczerocheck:
+		cpy #"9"
+		bne incdecimal
+		inx 
+		ldy #"0"
+		jmp incload
+incdecimal:
+		iny
+incload:
+		stx points1
+		sty points2
+		rts
+
+decpoint:
+		ldx points1
+		ldy points2
+		cpx #"1"
+		bne deczerocheck
+		cpy #"0"
+		beq decone
+		dey
+		jmp decload
+decone:
+		ldx #"0"
+		ldy #"9"
+		jmp decload
+
+deczerocheck:
+		cpy #"0"
+		bne deczero
+		ldx #"0"
+		ldy #"0"
+		jmp decload
+deczero:
+		dey
+decload:
+		stx points1
+		sty points2
+		rts
 
 ;--------------------------------------------------------------
 ; Clean up at the end
@@ -410,7 +502,8 @@ end:
 		rts
 
 
-result dc $08,$05,$0c,$0c,$0f
+rt_index dc $12,$14,$09,$0E,$04,$05,$18
+;rt_index dc $08,$05,$0c,$0c,$0f
 
 ;--------------------------------------------------------------
 		; Include Generated list of Sprites
