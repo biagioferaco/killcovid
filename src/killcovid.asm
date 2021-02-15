@@ -443,6 +443,8 @@ incpoint:
 inctwo:
 		ldx #'0'
 		ldy #'2'
+		stx points1
+		sty points2
 		jmp end
 
 inczerocheck:
@@ -495,7 +497,7 @@ end:
 		ldx #$00                    //using x register as column counter
 printgameover:
 		lda gameover,x              //load a with x bit from message
-		sta screen_ram+10,x //store this bit in row 0 col 0 address
+		sta screen_ram+8+11*40,x    //store this bit in row 0 col 0 address
 		inx                         //x++
 		cpx #$08                    //is x >= 7?
 		bne printgameover           //if not x >= 7, loop again
