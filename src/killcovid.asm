@@ -47,6 +47,7 @@
 .label spr_enable         = $d015
 .label spr_spr_collision  = $d01e
 
+start:
 //--------------------------------------------------------------
 		// Disable interrupts
 		lda #<32768
@@ -502,7 +503,11 @@ printgameover:
 		cpx #$08                    //is x >= 7?
 		bne printgameover           //if not x >= 7, loop again
 
-		rts
+playagain:
+		lda joystick2
+		and #16
+		bne playagain
+		jmp start
 
 //--------------------------------------------------------------
 		// Include Generated list of Sprites
