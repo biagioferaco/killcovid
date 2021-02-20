@@ -10,27 +10,29 @@ came out.
 The game is not so much challenging, but it was fun to code in assembly and
 see what you can do with few lines of code.
 
-##Rules
+## Rules
 When the game starts, the RT Index is at 1.0. Hitting the Covid with the
 vaccine reduces it, but when the virus hits the frame it increases (I told you,
 it is not so that much).
 When the RT Index reaches 2.0, the game is over.
 
-##Sprites Graphics
-For the generation of the sprites I used **SpritePad 1.8** (the project file
-is included in the source files). This program allows you to create several
-sprite and generate the .prg file that loads your graphics in memory, and that
-you can include in source code.
+## Sprites Graphics
+For the generation of the sprites I used
+[SpritePad 1.8.1](https://csdb.dk/release/?id=100657) (the project file is
+included in the source files). This program allows you to create several sprite
+and generate the *.prg* file that loads your graphics in memory, and that you
+can include in source code.
 
-##Compiler
+## Compiler
 At the beginning I started using DASM and it was fine, but then I moved to
-Kickassembler, because it was a nightmare dealing with strings.
+[Kickassembler](http://theweb.dk/KickAssembler/Main.html#frontpage), because it
+was a nightmare dealing with strings.
 
-##Debug
-As debug, **VICE 3.5** emulator was used.
+## Debug
+For debug, [VICE](https://vice-emu.sourceforge.io) Emulator was used.
 
-##TODO
-1. Fix the random appear of the Virus.
-2. Add an initial screen for the game.
-3. Fix Exit game.
-4. Add some music.
+## TODO
+- Fix the random appear of the Virus.
+- Add an initial screen for the game.
+- Fix Exit game.
+- Add some music.
