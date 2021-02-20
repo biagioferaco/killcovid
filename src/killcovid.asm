@@ -47,7 +47,7 @@
 .label spr_enable         = $d015
 .label spr_spr_collision  = $d01e
 
-start:
+
 //--------------------------------------------------------------
 		// Disable interrupts
 		lda #<32768
@@ -69,6 +69,37 @@ start:
 		lda #$01
 		sta textcolor
 		jsr clear
+
+		//Initial Message
+
+		ldx #$00
+killcovidmessage:
+		lda killcovid,x
+		sta screen_ram+8+11*40,x
+		inx
+		cpx #$09
+		bne killcovidmessage
+
+		ldx #$00
+		ldy #$00
+buttonmessage:
+		lda press_message,x
+		sta screen_ram+8+16*40,x
+		inx
+		cpx #$10
+		bne buttonmessage
+
+waitforstart:
+		lda joystick2
+		and #16
+		bne waitforstart
+
+start:
+		// Clear Screen
+		jsr clear
+
+		lda #13
+		sta enter
 
 		//--------------------------------------------------------------
 		// Enable Sprite0 and Sprite1
@@ -230,7 +261,7 @@ right:
 		bne bright1
 		ldx spr0_x
 		cpx #65
-		beq toend 
+		beq toend
 
 bright1:
 		ldx spr0_x
@@ -451,7 +482,7 @@ inctwo:
 inczerocheck:
 		cpy #'9'
 		bne incdecimal
-		inx 
+		inx
 		ldy #'0'
 		jmp incload
 incdecimal:
@@ -515,12 +546,16 @@ playagain:
 
 		// Load the file into the variable ’data’
 		.var data = LoadBinary("Sprites.prg")
-		
+
 		// Dump the data to the memory
 		myData: .fill data.getSize(), data.get(i)
 
 //--------------------------------------------------------------
 
-rt_index: .text "rt-index "
+killcovid:     .text "killcovid"
 
-gameover: .text "gameover"
+press_message: .text "press the button"
+
+rt_index:      .text "rt-index "
+
+gameover:      .text "gameover"
