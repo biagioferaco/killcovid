@@ -6,49 +6,49 @@
 
 //--------------------------------------------------------------
 // General
-.label clear     = $e544
-.label getin     = $ffe4
-.label scnkey    = $ff9f
-.label joystick2 = $dc00
+.label clear              = $e544
+.label getin              = $ffe4
+.label scnkey             = $ff9f
+.label joystick2          = $dc00
 
-.label enter     = $c202
-.label move      = $c203
+.label enter              = $c202
+.label move               = $c203
 
-.label temp0     = $0022
-.label temp1     = $0023
+.label temp0              = $0022
+.label temp1              = $0023
 
-.label points1   = $0024
-.label points2   = $0025
+.label points1            = $0024
+.label points2            = $0025
 
-.label timer1    = $d012
+.label timer1             = $d012
 
-.label border    = $d020
-.label backgrd   = $d021
-.label textcolor = $0286
+.label border             = $d020
+.label backgrd            = $d021
+.label textcolor          = $0286
 
-.label screen_ram = $0400
+.label screen_ram         = $0400
 
 // Sprite 0 Controls
-.label spr0_ptr = $07f8
-.label spr0_x   = $d000
-.label spr0_y   = $d001
-.label spr0_col = $d027
+.label spr0_ptr           = $07f8
+.label spr0_x             = $d000
+.label spr0_y             = $d001
+.label spr0_col           = $d027
 
 // Sprite 1 Controls
-.label spr1_ptr = $07f9
-.label spr1_x   = $d002
-.label spr1_y   = $d003
-.label spr1_col = $d028
+.label spr1_ptr           = $07f9
+.label spr1_x             = $d002
+.label spr1_y             = $d003
+.label spr1_col           = $d028
 
-// Others Sprite COntrols
+// Others Sprite Controls
 .label spr_mul_col_en     = $D01C
-.label spr_mul_col_1      = $D025
+.label spr_mul_col        = $D025
 .label sprx_msb           = $d010
 .label spr_enable         = $d015
 .label spr_spr_collision  = $d01e
 
 
-//--------------------------------------------------------------
+		//--------------------------------------------------------------
 		// Disable interrupts
 		lda #<32768
 		sta $0318
@@ -89,7 +89,46 @@ buttonmessage:
 		cpx #$10
 		bne buttonmessage
 
+		//--------------------------------------------------------------
+		// Enable Sprite1
+		lda #02
+		sta spr_enable
+
+		//--------------------------------------------------------------
+		// Initialize Spite 1
+		lda #$80
+		sta spr1_ptr
+
+		// Set Color for for Sprite 1 (Red)
+		lda #02
+		sta spr1_col
+
+		//--------------------------------------------------------------
+		// Starting Point Sprite 1 -- FIXME
+		lda sprx_msb
+		and #%11111101
+		sta sprx_msb
+
+		ldx #190
+		ldy #80
+		stx spr1_x
+		sty spr1_y
+
+		//--------------------------------------------------------------
+		// Initialize X and Y Direction of Covid
+		lda #1
+		sta temp0
+		sta temp1
+
 waitforstart:
+
+		// Timer Delay
+		lda #$0f
+		cmp timer1
+		bne waitforstart
+
+		jsr covidmovement_simple
+
 		lda joystick2
 		and #16
 		bne waitforstart
@@ -115,9 +154,13 @@ start:
 		lda #$88
 		sta spr0_ptr
 
-		// Set Color for for Sprite 0 (Red)
+		// Set Color for for Sprite 0 (Blue)
 		lda #03
 		sta spr0_col
+
+		// Set Color 2 for for Sprite 0 (White)
+		lda #01
+		sta spr_mul_col
 		//--------------------------------------------------------------
 
 		//--------------------------------------------------------------
@@ -125,13 +168,10 @@ start:
 		lda #$80
 		sta spr1_ptr
 
-		// Set Color for for Sprite 1 (Blue)
+		// Set Color for for Sprite 1 (Red)
 		lda #02
 		sta spr1_col
 
-		// Set Color 2 for for Sprite 1 (White)
-		lda #01
-		sta spr_mul_col_1
 		//--------------------------------------------------------------
 
 		//--------------------------------------------------------------
@@ -381,6 +421,105 @@ nextx42:
 nextx4:
 		rts
 //--------------------------------------------------------------
+
+//--------------------------------------------------------------
+// Covid Movement no Points
+covidmovement_simple:
+		ldy spr1_y
+		cpy #50
+		bne nexty1s
+
+		// Change direction (Down)
+		lda #1
+		sta temp1
+
+nexty1s:
+		cpy #229
+		bne nexty2s
+
+		// Change direction (Up)
+		lda #0
+		sta temp1
+
+nexty2s:
+		ldy spr1_y
+		lda temp1
+		cmp #1
+		bne nexty3s
+		iny
+		jmp nexty4s
+nexty3s:
+		dey
+nexty4s:
+		sty spr1_y
+
+		lda sprx_msb
+		and #%00000010
+		cmp #0
+		bne nextx1s
+
+		ldx spr1_x
+		cpx #24
+		bne nextx2s
+
+		ldy temp0
+		cpy #0
+		bne nextx2s
+
+		// Change direction (Right)
+		lda #1
+		sta temp0
+
+		jmp nextx2s
+
+nextx1s:
+		ldx spr1_x
+		cpx #64
+		bne nextx2s
+
+		ldy temp0
+		cpy #1
+		bne nextx2s
+
+		// Change direction (Left)
+		lda #0
+		sta temp0
+
+nextx2s:
+		ldx spr1_x
+		lda temp0
+		cmp #1
+		bne nextx3s
+
+		cpx #255
+		bcc nextx41s
+
+		lda sprx_msb
+		ora #%00000010
+		sta sprx_msb
+
+nextx41s:
+		inx
+		stx spr1_x
+		jmp nextx4s
+
+nextx3s:
+		cpx #1
+		bcs nextx42s
+
+		lda sprx_msb
+		and #%11111101
+		sta sprx_msb
+
+nextx42s:
+		dex
+		stx spr1_x
+
+nextx4s:
+		rts
+//--------------------------------------------------------------
+
+
 
 //--------------------------------------------------------------
 // Collision

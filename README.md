@@ -33,6 +33,6 @@ For debug, [VICE](https://vice-emu.sourceforge.io) Emulator was used.
 
 ## TODO
 - Fix the random appear of the Virus.
-- Add an initial screen for the game.
+- Beutify initial screen for the game.
 - Fix Exit game.
 - Add some music.
